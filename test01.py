@@ -13,6 +13,7 @@ def down_pic(num):
 
 for i in range(598, 900):
     down_pic(i)
+    print i
     
 
 
