@@ -1,11 +1,12 @@
 #!/usr/bin/python
 # coding:utf-8
-import urllib,re,os,time
-query = "{query}"
+import urllib,re,os,time,subprocess
+query = "1"
 fr_time = ''
 fr_desc_en = ''
 connections = ''
 balance = ''
+subprocess.call("ps -ef | grep discon.py | grep -v grep | awk '{print $2}' | xargs kill -9", shell=True)
 with open(os.path.expanduser('~')+'/.its') as f:
     fr = f.read().split()
     usrn = fr[0]
@@ -37,10 +38,12 @@ if sr:
         balance = str(round(float(re.search(r'BALANCE=(.*?) ', res).group(1)),1))
 else:
     out = re.search(r'REASON=(.*?) ', res.decode('gbk')).group(1)
-
+    print out
+    quit()
 print out
 if fr_time:
     print '收费时间: '+fr_time+'/'+fr_desc_en+' h, 连接数: '+connections+', 余额:'+balance
-
-
+if query == '2' and os.path.exists(os.path.expanduser('~/.discon')):
+    subprocess.Popen(['/bin/sh',os.path.expanduser('~/.discon.sh')], stdout=subprocess.PIPE)
+    quit()
 
