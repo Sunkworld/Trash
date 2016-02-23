@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # coding:utf-8
 import urllib,re,os,time,subprocess
-query = "1"
+query = "{query}"
 fr_time = ''
 fr_desc_en = ''
 connections = ''
