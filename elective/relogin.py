@@ -9,15 +9,18 @@ with open(os.path.expanduser('~')+'/.its') as f:
     usrn = fr[0]
     pswd = fr[1]
 data = {'appid':'syllabus', 'userName':'%s' % usrn, 'password':'%s' % pswd, 'randCode':'验证码', 'smsCode':'短信验证码', 'redirUrl':'http://elective.pku.edu.cn:80/elective2008/agent4Iaaa.jsp/../ssoLogin.do'}
+headers = {'User-Agent':'Chrome'}
 r = opener.open('https://iaaa.pku.edu.cn/iaaa/oauthlogin.do',urllib.urlencode(data)).read()
 s = {}
 s['token'] = re.search(r'n":"(.*?)"',r).group(1)
 s['rand'] = 0.2347834
 opener.open('http://elective.pku.edu.cn/elective2008/ssoLogin.do',urllib.urlencode(s)).read()
-opener.open('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do',urllib.urlencode(s)).read()
+headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/ssoLogin.do?rand=0.2347834&token='+s['token']
+s1 = opener.open(urllib2.Request('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do',urllib.urlencode(s), headers)).read()
+headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do'
 
-s1 = opener.open('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20',urllib.urlencode(s)).read()
-#    print s1
+s1 = opener.open(urllib2.Request('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20',urllib.urlencode(s),headers)).read()
+headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do'
 ss = re.findall(r'60">22 / (.*?)</', s1)
 jishu = 0
 
@@ -30,10 +33,14 @@ while True:
     s['token'] = re.search(r'n":"(.*?)"',r).group(1)
     s['rand'] = 0.234729834
     opener.open('http://elective.pku.edu.cn/elective2008/ssoLogin.do',urllib.urlencode(s)).read()
-    opener.open('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do',urllib.urlencode(s)).read()
+    headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/ssoLogin.do?rand=0.2347834&token='+s['token']
+    s1 = opener.open(urllib2.Request('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do',urllib.urlencode(s), headers)).read()
+    headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do'
 
-    s1 = opener.open('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20',urllib.urlencode(s)).read()
+    s1 = opener.open(urllib2.Request('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20',urllib.urlencode(s),headers)).read()
+    headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do'
     ss = re.findall(r'60">22 / (.*?)</', s1)
+#    print ss
     t = 0
     jishu += 1
     for item in ss:
