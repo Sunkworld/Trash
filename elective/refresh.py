@@ -1,76 +1,197 @@
+#!/usr/bin/env python
 # coding: utf-8
 
-import re,os,requests,time
+import requests
+import re
+import os
+from time import sleep
+import denoise
 
-t = 0
-def notif():
-    os.system("""osascript -e 'display notification "有课能选了！！" with title "hey，傻逼"'""")
-    for i in range(1,100):
-        os.system('say "There is vacancy in the course you selected"')
-        t = 1
+class pku_elective:
+    oauthLogin = 'https://iaaa.pku.edu.cn/iaaa/oauthlogin.do'
+    ssoLogin = 'http://elective.pku.edu.cn/elective2008/ssoLogin.do'
+    page = []
+    page.append('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do')
+    page.append('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20')
+    page.append('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B40')
+    page_capt = 'http://elective.pku.edu.cn/elective2008/DrawServlet?Rand=9912.118702195585'
+    page_valid = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/validate.do?validCode='
+    page_refresh = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/refreshLimit.do'
+    page_elect = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/electSupplement.do'
+    def __init__(self):
+        self.data = []
+        self.sess = requests.Session()
+        self.numbers = []
+        self.now = 0
 
-sess1 = requests.Session()
+    def getNext(self, url, params=[], referer=''):
+        if referer != '':
+            self.sess.headers.update({'Referer':referer})
+        while True:
+            try:
+                r = self.sess.get(url, params=params)
+                break
+            except:
+                print "Network Problem...1"
+                sleep(30)
+        return r.content
+    
+    def postNext(self, url, data=[], referer=''):
+        if referer != '':
+            self.sess.headers.update({'Referer':referer})
+        while True:
+#            print url, data, self.sess.headers
+            try:
+                r = self.sess.post(url, data)
+#                print r.text
+                break
+            except:
+                print "Network Problem...2"
+                sleep(30)
+        return r.content
 
-with open(os.path.expanduser('~')+'/.its') as f:
-    fr = f.read().split()
-    usrn = fr[0]
-    pswd = fr[1]
+    def getId(self):
+        with open(os.path.expanduser('~/.its')) as f:
+            fr = f.read().split()
+            usrn = fr[0]
+            pswd = fr[1]
+        self.data = {'appid':'syllabus', 'userName':'%s' % usrn, 'password':'%s' % pswd, 'randCode':'验证码', 'smsCode':'短信验证码', 'redirUrl':'http://elective.pku.edu.cn:80/elective2008/agent4Iaaa.jsp/../ssoLogin.do'}
+        self.sess.headers.update({'User-Agent':'Chrome'})
 
-data = {'appid':'syllabus', 'userName':'%s' % usrn, 'password':'%s' % pswd, 'randCode':'验证码', 'smsCode':'短信验证码', 'redirUrl':'http://elective.pku.edu.cn:80/elective2008/agent4Iaaa.jsp/../ssoLogin.do'}
-headers = {'User-Agent':'Chrome'}
-cont1 = sess1.post('https://iaaa.pku.edu.cn/iaaa/oauthlogin.do', data=data, headers=headers)
+    def login(self):
+        cont = self.postNext(pku_elective.oauthLogin, self.data)
+        p = {}
+        p['token'] = re.search(r'n":"(.*?)"',cont).group(1)
+        p['rand'] = 0.32874243
+        self.getNext(pku_elective.ssoLogin, p)
 
-p1 = {}
-p1['token'] = re.search(r'n":"(.*?)"',cont1.text).group(1)
-p1['rand'] = 0.32874243
+    def getContent(self):
+        cont = []
+        while True:
+            try:
+                cont.append(self.getNext(pku_elective.page[0], referer=pku_elective.ssoLogin))
+                try:
+                    self.now = re.search(r'总学分为：(.*?)<', cont[len(cont)-1]).group(1)
+                except:
+                    self.sess = requests.Session()
+                    self.getStart(self.numbers)
+                break
+            except:
+                print "Network Problem...3"
+                sleep(30)
+        try:
+            cont.append(self.getNext(pku_elective.page[1], referer=pku_elective.page[0]))
+        except:
+            pass
+        try:
+            cont.append(self.getNext(pku_elective.page[2], referer=pku_elective.page[1]))
+        except:
+            pass
+        return cont
 
-sess1.get('http://elective.pku.edu.cn/elective2008/ssoLogin.do', params=p1)
-headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/ssoLogin.do?rand=0.2347834&token='+p1['token']
-s1 = sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do',headers=headers)
-headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do'
-s1 = sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20', headers=headers)
-headers['Referer'] = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp?netui_pagesize=electableListGrid%3B20&netui_row=electableListGrid%3B20'
-ss = s1.content
-capt = sess1.get('http://elective.pku.edu.cn/elective2008/DrawServlet?Rand=9912.118702195585', headers=headers)
-with open('1.jpg','wb+') as p:
-    p.write(capt.content)
-c = raw_input('Please enter the captcha:')
-print sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/validate.do?validCode='+c, headers=headers).text
-#print sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/electSupplement.do?index=27&seq=BKC00432510AT0001077', headers=headers).text
-#print sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/electSupplement.do?index=23&seq=BKC00410612AT0000797', headers=headers).text
-fl = re.finditer(r'refreshLimit(.*?)\'\',\'(.*?)\',\'(.*?)\',\'(.*?)\'', s1.text)
-fl1 = []
-for match in fl:
-    #print match.group(2), match.group(3), match.group(4)
-    if match.group(4) == '22':
-        fl1.append({'index':'%s' % match.group(2), 'seq':'%s' % match.group(3)})
+    def decaptcha(self):
+        while True:
+            capt = self.getNext(pku_elective.page_capt)
+            with open('1.jpg','wb+') as p:
+                p.write(capt)
+            denoise.process('1.jpg', '2.jpg')
+            os.system('tesseract -psm 8 2.jpg outputbase 2>/dev/null')
+            with open('outputbase.txt') as p:
+                t = p.read().strip()
+            try:
+                res = self.getNext(pku_elective.page_valid+t)
+            except:
+                print "Network Problem...4"
+                sleep(30)
+            if re.search(r'<valid>2</valid>', res):
+                break
+            
+    def getCourse(self):
+        cont = self.getContent()
+        courseList = []
+        for i in range(len(cont)):
+            fl = re.finditer(r'refreshLimit(.*?)\'\',\'(.*?)\',\'(.*?)\',\'(.*?)\'', cont[i])
+            if not fl:
+                continue
+            for match in fl:
+                for j in range(len(self.numbers)):
+                    if match.group(4) == self.numbers[j]:
+                        courseList.append({'index':'%s' % match.group(2),
+                                           'seq':'%s' % match.group(3),
+                                           'num':'%s' % self.numbers[j],
+                                           'page':'%s' % i})
+#        print courseList
+        return courseList
 
-        #fl1['%s' % match.group(2)]='%s' % match.group(3)
+    def reFresh(self, cl):
+        count = 0
+        while True:
+            count += 1
+            for i in range(len(cl)):
+                p = {}
+                p['index'] = cl[i]['index']
+                p['seq'] = cl[i]['seq']
+                while True:
+                    try:
+                        sr1 = self.getNext(pku_elective.page_refresh, p, pku_elective.page[int(cl[i]['page'])])
+                        break
+                    except:
+                        print "Network Problem...5"
+                        sleep(30)
+                try:
+                    fi1 = re.search(r'Num>(.*?)</', sr1).group(1)
+                except:
+                    self.sess = requests.Session()
+                    self.getStart(self.numbers)
+#                print fi1
+                if fi1 != cl[i]['num']:
+                    self.elect(cl, i)
+                sleep(5)
+            print "There is no vacancy. Try time %s" % count
+                        
 
-#        fl2['%s' % match.group(2)]='%s' % match.group(3)
+    def elect(self, cl, i):
+        p = {}
+        p['index'] = cl[i]['index']
+        p['seq'] = cl[i]['seq']
+        while True:
+            try:
+                sr1 = self.getNext(pku_elective.page_elect, p, pku_elective.page[int(cl[i]['page'])])
+                break
+            except:
+                print "Network Problem...6"
+                sleep(30)
+        c = self.getNext(pku_elective.page[0], referer=pku_elective.ssoLogin)
+        s = re.search(r'总学分为：(.*?)<', c)
+        if s:
+            if s.group(1) != self.now:
+                print "选上了人数为%s的课" % cl[i]['num']
+                self.now = s.group(1)
+            else:
+                print "选课失败"
+        else:
+            print "Unknown Error"
+        sess = requests.Session()
+        self.getStart(self.numbers)
+            
+    
+    def getStart(self, numbers=[]):
+        self.getId()
+        self.numbers = numbers
+        self.login()
+        cl = self.getCourse()
+        self.decaptcha()
+        self.reFresh(cl)
 
-print fl1
-jishu = 0
-while True:
-    t = 0
-    jishu += 1
-    for i in range(0,len(fl1)):
-        sr1 = sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/refreshLimit.do', params=fl1[i], headers=headers)
-#        print sr1.text
-        fi1 = re.search(r'Num>(.*?)</', sr1.text).group(1)
-#        print fi1
-        if fi1 != '22':
-            sess1.get('http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/electSupplement.do', params=fl1[i], headers=headers)
-            notif()
-        time.sleep(5)
+new_elective = pku_elective()
+numbers = raw_input("Please enter the maxium people of your desired course:").split()
+new_elective.getStart(numbers)
 
 
-
-    if t == 0:
-        print "There is no vacancy. Try time %d" % jishu
-
-
+    
         
 
+        
+    
 
 
