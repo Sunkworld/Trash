@@ -127,6 +127,8 @@ class pku_elective:
         count = 0
         while True:
             count += 1
+            if len(cl) == 0:
+                quit()
             for i in range(len(cl)):
                 p = {}
                 p['index'] = cl[i]['index']
