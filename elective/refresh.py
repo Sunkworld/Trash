@@ -6,6 +6,7 @@ import re
 import os
 from time import sleep
 import denoise
+import thread
 
 class pku_elective:
     oauthLogin = 'https://iaaa.pku.edu.cn/iaaa/oauthlogin.do'
@@ -18,10 +19,11 @@ class pku_elective:
     page_valid = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/validate.do?validCode='
     page_refresh = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/refreshLimit.do'
     page_elect = 'http://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/electSupplement.do'
-    def __init__(self):
+    count = 0
+    def __init__(self, numbers):
         self.data = []
         self.sess = requests.Session()
-        self.numbers = []
+        self.numbers = numbers
         self.now = 0
 
     def getNext(self, url, params=[], referer=''):
@@ -74,7 +76,7 @@ class pku_elective:
                     self.now = re.search(r'总学分为：(.*?)<', cont[len(cont)-1]).group(1)
                 except:
                     self.sess = requests.Session()
-                    self.getStart(self.numbers)
+                    self.getStart()
                 break
             except:
                 print "Network Problem...3"
@@ -123,10 +125,8 @@ class pku_elective:
 #        print courseList
         return courseList
 
-    def reFresh(self, cl):
-        count = 0
-        while True:
-            count += 1
+    def reFresh(self, cl):        
+        while True:            
             if len(cl) == 0:
                 quit()
             for i in range(len(cl)):
@@ -144,12 +144,13 @@ class pku_elective:
                     fi1 = re.search(r'Num>(.*?)</', sr1).group(1)
                 except:
                     self.sess = requests.Session()
-                    self.getStart(self.numbers)
+                    self.getStart()
 #                print fi1
                 if fi1 != cl[i]['num']:
                     self.elect(cl, i)
                 sleep(5)
-            print "There is no vacancy. Try time %s" % count
+            pku_elective.count += 1
+            print "There is no vacancy. Try time %s" % pku_elective.count
                         
 
     def elect(self, cl, i):
@@ -174,20 +175,25 @@ class pku_elective:
         else:
             print "Unknown Error"
         sess = requests.Session()
-        self.getStart(self.numbers)
+        self.getStart()
             
     
-    def getStart(self, numbers=[]):
-        self.getId()
-        self.numbers = numbers
+    def getStart(self):
+        self.getId()        
         self.login()
         cl = self.getCourse()
         self.decaptcha()
         self.reFresh(cl)
-
-new_elective = pku_elective()
 numbers = raw_input("Please enter the maxium people of your desired course:").split()
-new_elective.getStart(numbers)
+new_elective = []
+for i in range(5):
+    new_elective.append(pku_elective(numbers))
+    thread.start_new_thread(new_elective[len(new_elective)-1].getStart, ())
+    sleep(5)
+new_elective.append(pku_elective(numbers))
+new_elective[len(new_elective)-1].getStart()
+
+
 
 
     
