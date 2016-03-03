@@ -19,6 +19,12 @@ try:
         res = urllib.urlopen('https://its.pku.edu.cn:5428/ipgatewayofpku?uid='+usrn+'&password='+pswd+'&range=1&operation=connect&timeout=1').read()
     elif query == '3':
         res = urllib.urlopen('https://its.pku.edu.cn:5428/ipgatewayofpku?uid='+usrn+'&password='+pswd+'&range=2&operation=disconnectall&timeout=1').read()
+    elif query == '4':
+        res = urllib.urlopen('https://its.pku.edu.cn:5428/ipgatewayofpku?uid='+usrn+'&password='+pswd+'&range=2&operation=disconnectall&timeout=1').read()
+        res = urllib.urlopen('https://its.pku.edu.cn:5428/ipgatewayofpku?uid='+usrn+'&password='+pswd+'&range=2&operation=connect&timeout=1').read()
+    elif query == '5':
+        res = urllib.urlopen('https://its.pku.edu.cn:5428/ipgatewayofpku?uid='+usrn+'&password='+pswd+'&range=2&operation=disconnectall&timeout=1').read()
+        res = urllib.urlopen('https://its.pku.edu.cn:5428/ipgatewayofpku?uid='+usrn+'&password='+pswd+'&range=1&operation=connect&timeout=1').read()
     else:
         out = '输入编号有误'
         print out
@@ -27,7 +33,7 @@ except IOError, e:
     print e
     quit()
 
-dict = {'1': '免费地址连接成功', '2': '收费地址连接成功', '3': '已断开所有连接'}
+dict = {'1': '免费地址连接成功', '2': '收费地址连接成功', '3': '已断开所有连接', '4': '免费地址连接成功', '5': '收费地址连接成功'}
 sr = re.search(r'SUCCESS=YES (.)', res)
 if sr:
     out = dict[query]

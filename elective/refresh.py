@@ -184,14 +184,19 @@ class pku_elective:
         cl = self.getCourse()
         self.decaptcha()
         self.reFresh(cl)
-numbers = raw_input("Please enter the maxium people of your desired course:").split()
-new_elective = []
-for i in range(5):
-    new_elective.append(pku_elective(numbers))
-    thread.start_new_thread(new_elective[len(new_elective)-1].getStart, ())
-    sleep(5)
-new_elective.append(pku_elective(numbers))
-new_elective[len(new_elective)-1].getStart()
+if __name__ == '__main__':
+    numbers = raw_input("Please enter the maxium people of your desired course:").split()
+    new_elective = []
+    try:
+        for i in range(5):
+            new_elective.append(pku_elective(numbers))
+            thread.start_new_thread(new_elective[len(new_elective)-1].getStart, ())
+            sleep(5)
+        new_elective.append(pku_elective(numbers))
+        new_elective[len(new_elective)-1].getStart()
+    except KeyboardInterrupt, e:
+        print "\nScript is terminated"
+        quit()
 
 
 
