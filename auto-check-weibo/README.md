@@ -1,2 +1,12 @@
-## If she posts a weibo Then email me. 
-就是一个IFTTT啊囧rz...
+# Auto Check Weibo
+This is a script used for automatically checking specific weibo users'
+update. One can adjust following settings as he likes.
+## Features
+- Notify when she posts a new weibo
+- Notify when she deletes a weibo
+- Notify when she follows someone
+- Notify when she has new fans
+- Auto like her weibos
+## Dependency
+- request(via pip)
+- beautifulsoup4(via pip)
