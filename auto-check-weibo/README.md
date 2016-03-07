@@ -7,6 +7,7 @@ update. One can adjust following settings as he likes.
 - Notify when she follows someone
 - Notify when she has new fans
 - Auto like her weibos
+
 ## Dependency
 - request(via pip)
 - beautifulsoup4(via pip)
