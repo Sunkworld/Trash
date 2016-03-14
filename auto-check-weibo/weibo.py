@@ -269,7 +269,7 @@ if __name__ == '__main__':
             for item in p:
                 item.chk()
                 time.sleep(5)
-        time.sleep(autochkweibo.relaxtime)
+            time.sleep(autochkweibo.relaxtime)
 
     except KeyboardInterrupt:
         print "\nScript is terminated."
