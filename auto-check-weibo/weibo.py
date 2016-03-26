@@ -107,9 +107,13 @@ class autochkweibo:
     def chk_weibo(self, d):
         weibocount = int(re.search(r"微博\[(.*?)\]", self.soup.find('span','tc').get_text().encode('utf-8')).group(1))
         weibolist = []
+        newweibo = []
         for item in self.soup.find_all('div','c', id=True):
             weibolist.append(item['id'])
-        if weibocount > self.weibocount or weibolist[0] not in self.weibolist:
+        for item in weibolist:
+            if item not in self.weibolist:
+                newweibo.append(item)
+        if len(newweibo):
             l = self.soup.find_all('div','c',id=True)
             msg = "当前共有%s条微博。\n\n" % weibocount
             for item in l:
@@ -274,6 +278,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print "\nScript is terminated."
         
-
+        
 
 
