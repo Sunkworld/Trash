@@ -1,0 +1,5 @@
+FROM_EMAIL_HOST = 'smtp.gmail.com'
+FROM_EMAIL_PORT = 587
+EMAIL_USER = 'es.aptx4869'
+EMAIL_PASSWD = ''
+TO_EMAIL = '365062829@qq.com'
