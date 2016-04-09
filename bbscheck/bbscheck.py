@@ -1,8 +1,10 @@
 #coding:utf-8
 import requests
 import re
+import sys
 import time
 from bs4 import BeautifulSoup
+sys.path.append('..')
 from funcs import functions
 def main():
     boardlist = ['Apple']
