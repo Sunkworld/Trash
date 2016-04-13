@@ -5,6 +5,7 @@ This is a practice project consisting of a bunch of python scripts for some simp
 - **dilidili**: Auto save latest episode of animes to baiduyun
 - **elective**: Auto course elective script for pku
 - **instru-reserve**: Auto instrument reserving script for CCME
+- **gmgard**: Auto signin script for gmgard.com
 - **pku-ipgw-workflow**: Alfred 2 Workflow for pku gateway
 - **test01**: Picture Download
 - **wordcount**: Chinese Word Frequency Count
