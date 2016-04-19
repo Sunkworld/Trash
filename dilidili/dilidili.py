@@ -16,8 +16,9 @@ sys.path.append('..')
 sys.path.append('/Applications/script/')
 #sys.setdefaultencoding('utf-8')
 from funcs import functions
-wantedList = ['Re：从零开始的异世界生活', '薄樱鬼御伽草子', '双星之阴阳师', '文豪野犬', '黑色残骸', '我叫坂本我最屌', '亚人', '羁绊者', '逆转裁判', '迷家', '超人幻想 第二季', '超时空要塞Δ Macross Delta']
+wantedList = ['Re：从零开始的异世界生活', '薄樱鬼御伽草子', '双星之阴阳师', '文豪野犬', '黑色残骸', '我叫坂本我最屌', '亚人', '羁绊者', '逆转裁判', '迷家', '超人幻想 第二季', '超时空要塞Δ Macross Delta', '甲铁城的卡巴内瑞']
 urll = {}
+watched = {}
 def getAnimeList():
     s = requesocks.session()
     s.proxies = {'http':'socks5://127.0.0.1:1080'}
@@ -95,64 +96,68 @@ def login(usrn, pswd):
     return w
 def saveToDisk(name, url):
     global w
+    global watched
+#    name = name.encode('utf-8')
     w.get(url)
     w.refresh()
     try:
         suburl = re.search('typicalPath":"(.*?)"', w.page_source).group(1).replace('\\/','%252F')
     except:
-        print "Link for %s is lost." % name
+        print "Link for %s is lost." % name.encode('utf-8')
         return False
     if not args.download:
-        w.get(url+'#path='+suburl)#+'?render-type=list-view')
+        w.get(url+'#path='+suburl.decode('unicode-escape'))#+'?render-type=list-view')
         time.sleep(2)
+    soup = BeautifulSoup(w.page_source.encode('utf-8'))
     l = w.find_elements_by_xpath('//span[@node-type="chk"]')
     try:
         l[1].click()
     except:
-        print "No resource for %s" % name
+        print "No resource for %s" % name.encode('utf-8')
         return False
+    title = soup.find('span','name-text-wrapper').span['title']
+    c = int(re.search('[^\d]*(\d*).*\.', title).group(1))
+    if not c > int(watched[name]):
+        watched[name] = str(c)
+#        print "New episode of %s has yet to be released" % name
+        return True
+    watched[name] = str(c)
+    
     sub = w.find_elements_by_xpath('//a[@data-key="saveToDisk"]')
     sub[0].click()
     confirm = w.find_element_by_id("_disk_id_15")
     confirm.click()
-    print "Saved: " + name
+    print "Saved: " + name.encode('utf-8') + ", episode " + str(c)
     
 def getUrl(animelist):
     global urll
     s = requesocks.session()
     s.proxies = {'http':'socks5://127.0.0.1:1080'}
-    urllist = []
     for i in range(0, len(animelist.keys())):
         print animelist.values()[i]
-        
         try:
             res = s.get(animelist.values()[i])
             soup = BeautifulSoup(res.content, "lxml")
-            u = soup.find('div', 'download area').a['href']
+            u = soup.find('li', 'list_xz').a['href']
         except:
-            urll[animelist.keys()[i]] =''
-            urllist.append('')
+            print "Error"
+            urll[animelist.keys()[i]] = ''
             continue
         if re.search('pan.baidu', u):
             urll[animelist.keys()[i]] = u
-            urllist.append(u)
             print "Get Url:"+u
             continue
         elif not re.search('thread', u):
-            urllist.append('')
+            urll[animelist.keys()[i]] = ''
             continue
         res = s.get(u).content
         soup = BeautifulSoup(res, "lxml")
         for it in soup('a', href=True):
             if re.search('pan.baidu', it['href']):
                 urll[animelist.keys()[i]] = it['href']
-                urllist.append(it['href'])
                 print "Get url:"+it['href']
                 break
 #        print urll
-    for item in urllist:
-        os.system('echo %s >> urllist.txt' % item)
-    return urllist
 def getAnimeUrl():
     ll = []
     for i in range(10):
@@ -179,7 +184,7 @@ def saveSpecified():
         if re.search(args.download, k.encode('utf-8')):
             tmplist[k] = v
     if not tmplist:
-        print "No anime as %s" % arg.download
+        print "No anime as %s" % args.download
         return False
     elif len(tmplist.keys()) > 1:
         print "There are several animes of the name you search."
@@ -196,10 +201,19 @@ def saveSpecified():
         saveToDisk(tmplist.keys()[0], tmplist.values()[0])
 
 def autoSave():
+    global watched
     while True:
+        if os.path.exists('watched.txt'):
+            with open('watched.txt') as f:
+                watched = json.load(f)
+        for item in wantedList:
+            if not watched.has_key(item.decode('utf-8')):
+                watched[item.decode('utf-8')] = '0'
         for item in wantedList:
             item = item.decode('utf-8')
             saveToDisk(item, urll[item])
+        with open('watched.txt','wb+') as f:
+            json.dump(watched, f)
         time.sleep(100000)
         
 if __name__ == '__main__':
@@ -208,8 +222,9 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('-s', '--search', help='search dilidili for animes')
     p.add_argument('-d', '--download', help='save to my disk')
+    p.add_argument('-u', '--update', action='store_true', help='update the disk urls')
     args = p.parse_args()
-    if os.path.exists('urll.txt'):
+    if os.path.exists('urll.txt') and not args.update:
         with open('urll.txt','rb+') as f:
             urll = json.load(f)
     else:
@@ -220,9 +235,13 @@ if __name__ == '__main__':
             list = getAnimeList()
         urll = getAnimeUrl()
     if args.search:
+        count = 0
         for k,v in urll.iteritems():
             if re.search(args.search, k.encode('utf-8')):
                 print k,v
+                count += 1
+        if not count:
+            print "There is no anime as %s" % args.download
     else:
         w = webdriver.PhantomJS()
         w = login(usrn, pswd)
@@ -230,4 +249,4 @@ if __name__ == '__main__':
             saveSpecified()
         else:
             autoSave()
-    w.quit()
+        w.quit()
