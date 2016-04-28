@@ -4,6 +4,7 @@ import requests
 import requesocks
 import os
 import re
+import Queue
 from bs4 import BeautifulSoup
 import json
 from selenium import webdriver
@@ -16,7 +17,7 @@ sys.path.append('..')
 sys.path.append('/Applications/script/')
 #sys.setdefaultencoding('utf-8')
 from funcs import functions
-wantedList = ['Re：从零开始的异世界生活', '薄樱鬼御伽草子', '双星之阴阳师', '文豪野犬', '黑色残骸', '我叫坂本我最屌', '亚人', '羁绊者', '逆转裁判', '迷家', '超人幻想 第二季', '超时空要塞Δ Macross Delta', '甲铁城的卡巴内瑞']
+wantedList = ['Re：从零开始的异世界生活', '薄樱鬼御伽草子', '双星之阴阳师', '文豪野犬', '黑色残骸', '我叫坂本我最屌', '亚人', '羁绊者', '逆转裁判', '迷家', '超人幻想 第二季', '超时空要塞Δ Macross Delta', '甲铁城的卡巴内瑞无删减版']
 urll = {}
 watched = {}
 def getAnimeList():
@@ -24,19 +25,17 @@ def getAnimeList():
     s.proxies = {'http':'socks5://127.0.0.1:1080'}
     animelist = {}
     url = 'http://www.dilidili.com'
+    animeurl = url + '/anime/'
     dililist = []
-    dililist.append(url+'/2000xq')
-    dililist.append(url+'/2010xq')
-    for i in range(2010,2016):
-        for j in range(4):
-            dililist.append(url+'/%sxf/%s' % (i, 3*j+1))
-    dililist.append(url+'/2016xf/1')
-    dililist.append(url+'/2016xf/4')
+    dililist.append(animeurl+'2000xq')
+    dililist.append(animeurl+'2010xq')
+    for i in range(2010,2017):
+        dililist.append(animeurl + str(i))
     for l in dililist:
         r = s.get(l)
         soup = BeautifulSoup(r.content)
         for item in soup('a', href=re.compile('/anime/(.*?)')):
-            if item.string:
+            if item.string and not re.search('dili',item['href']):
                 animelist[item.string] = url+item['href']
                 print item.string, url+item['href']
         print 'Get:'+l
@@ -97,9 +96,10 @@ def login(usrn, pswd):
 def saveToDisk(name, url):
     global w
     global watched
+
 #    name = name.encode('utf-8')
     w.get(url)
-    w.refresh()
+#    w.refresh()
     try:
         suburl = re.search('typicalPath":"(.*?)"', w.page_source).group(1).replace('\\/','%252F')
     except:
@@ -109,40 +109,55 @@ def saveToDisk(name, url):
         w.get(url+'#path='+suburl.decode('unicode-escape'))#+'?render-type=list-view')
         time.sleep(2)
     soup = BeautifulSoup(w.page_source.encode('utf-8'))
-    l = w.find_elements_by_xpath('//span[@node-type="chk"]')
-    try:
-        l[1].click()
-    except:
-        print "No resource for %s" % name.encode('utf-8')
-        return False
-    title = soup.find('span','name-text-wrapper').span['title']
-    c = int(re.search('[^\d]*(\d*).*\.', title).group(1))
-    if not c > int(watched[name]):
-        watched[name] = str(c)
+    tmp = [0, 0]
+    if not args.download:
+        title = soup.find_all('span','name-text-wrapper')#
+        if len(title) < 2:
+            print "No resource for %s" % name.encode('utf-8')
+            return False
+        for i in range(len(title)):
+            try:
+                c = int(re.search('[^\d]*(\d*).*\.', title[i].span['title']).group(1))
+            except:
+                c = 0
+            if c > tmp[0]:
+                tmp[0] = c
+                tmp[1] = i
+            
+        if not tmp[0] > int(watched[name]):
+            watched[name] = str(tmp[0])
 #        print "New episode of %s has yet to be released" % name
-        return True
-    watched[name] = str(c)
+            return True
+        watched[name] = str(tmp[0])
+    l = w.find_elements_by_xpath('//span[@node-type="chk"]')
+    l[1+tmp[1]].click()
     
     sub = w.find_elements_by_xpath('//a[@data-key="saveToDisk"]')
     sub[0].click()
     confirm = w.find_element_by_id("_disk_id_15")
-    confirm.click()
-    print "Saved: " + name.encode('utf-8') + ", episode " + str(c)
-    
+#    confirm.click()
+    print "Saved: " + name.encode('utf-8'),
+    try:
+        print ", episode " + str(tmp[0])
+    except:
+        print '\n'
 def getUrl(animelist):
     global urll
     s = requesocks.session()
     s.proxies = {'http':'socks5://127.0.0.1:1080'}
     for i in range(0, len(animelist.keys())):
         print animelist.values()[i]
+        res = s.get(animelist.values()[i])
+        soup = BeautifulSoup(res.content, "lxml")
         try:
-            res = s.get(animelist.values()[i])
-            soup = BeautifulSoup(res.content, "lxml")
             u = soup.find('li', 'list_xz').a['href']
         except:
-            print "Error"
-            urll[animelist.keys()[i]] = ''
-            continue
+            try:
+                u = soup.find('div', 'download area').a['href']
+            except:
+                print "Error"
+                urll[animelist.keys()[i]] = ''
+                continue
         if re.search('pan.baidu', u):
             urll[animelist.keys()[i]] = u
             print "Get Url:"+u
@@ -150,7 +165,13 @@ def getUrl(animelist):
         elif not re.search('thread', u):
             urll[animelist.keys()[i]] = ''
             continue
-        res = s.get(u).content
+        while True:
+            try:
+                res = s.get(u).content
+                break
+            except:
+                print "Network Error"
+                time.sleep(10)
         soup = BeautifulSoup(res, "lxml")
         for it in soup('a', href=True):
             if re.search('pan.baidu', it['href']):
@@ -159,6 +180,10 @@ def getUrl(animelist):
                 break
 #        print urll
 def getAnimeUrl():
+    que = Queue.Queue()
+    for item in list:
+        que.put({item:list[item]})
+    '''
     ll = []
     for i in range(10):
         ll.append({})
@@ -167,10 +192,15 @@ def getAnimeUrl():
         for j in range(100*i, min(100*i+100, len(list))):
             ll[i][list.keys()[j]] = list.values()[j]
     threads = []
+    '''
+    threads = []
+    def worker():
+        while not que.empty():
+            getUrl(que.get())
     for i in range(10):
-        threads.append(Thread(target = getUrl, args = (ll[i],)))
+        threads.append(Thread(target = worker))
         threads[i].start()
-    for i in range(1,6):
+    for i in range(10):
         threads[i].join()
 #    urllist = getUrl(list)
     with open('urll.txt','wb+') as f:
