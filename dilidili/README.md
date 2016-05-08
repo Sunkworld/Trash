@@ -7,6 +7,7 @@ of animes to Baiduyun from dilidili.
 - `./dilidili.py -d XXX` download XXX
 - `./dilidili.py` auto-save the animes in wantedList
 - `./dilidili.pu -u` update the anime repository
+
 ## Dependency
 - request(via pip)
 - beautifulsoup4(via pip)
