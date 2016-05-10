@@ -96,25 +96,32 @@ def login(usrn, pswd):
 def saveToDisk(name, url):
     global w
     global watched
-
 #    name = name.encode('utf-8')
     w.get(url)
-#    w.refresh()
+    w.refresh()
     try:
-        suburl = re.search('typicalPath":"(.*?)"', w.page_source).group(1).replace('\\/','%252F')
-    except:
+        re.search('typicalPath":"(.*?)"', w.page_source).group(1).replace('\\/','%252F')
+
+    except Exception, e:
         print "Link for %s is lost." % name.encode('utf-8')
         return False
+    
     if not args.download:
-        w.get(url+'#path='+suburl.decode('unicode-escape'))#+'?render-type=list-view')
-        time.sleep(2)
+        try:
+            while not re.search('mp4', w.page_source):
+                w.find_element_by_xpath('//span[@class="name-text-wrapper"]/span').click()
+                time.sleep(1)
+        except:
+            print "No resource for %s" % name.encode('utf-8')
+            return False
+
     soup = BeautifulSoup(w.page_source.encode('utf-8'))
     tmp = [0, 0]
     if not args.download:
         title = soup.find_all('span','name-text-wrapper')#
-        if len(title) < 2:
-            print "No resource for %s" % name.encode('utf-8')
-            return False
+#        if len(title) < 2:
+#            print "No resource for %s" % name.encode('utf-8')
+#            return False
         for i in range(len(title)):
             try:
                 c = int(re.search('[^\d]*(\d*).*\.', title[i].span['title']).group(1))
@@ -134,8 +141,39 @@ def saveToDisk(name, url):
     
     sub = w.find_elements_by_xpath('//a[@data-key="saveToDisk"]')
     sub[0].click()
+    if not args.download:
+        time.sleep(1)
+        try:
+            d = w.find_element_by_xpath('//span[@node-path="dilidili"]')
+            d.click()
+            time.sleep(1)
+        except:
+            new = w.find_element_by_id("_disk_id_16")
+            new.click()
+            time.sleep(1)
+            p = w.find_elements_by_xpath('//input')[-1]
+            p.clear()
+            p.send_keys('dilidili')
+            p = w.find_elements_by_xpath('//span[@class="sure _disk_id_18"]')[-1]
+            p.click()
+        try:
+            h = w.find_element_by_xpath('//span[@node-path="%s"]' % name)
+            h.click()
+        except:
+            new = w.find_element_by_id("_disk_id_16")
+            new.click()
+            time.sleep(1)
+            p = w.find_elements_by_xpath('//input')[-1]
+            p.clear()
+            p.send_keys(name)
+            p = w.find_elements_by_xpath('//span[@class="sure _disk_id_18"]')[-1]
+            p.click()
+
+#    print 2
+#    time.sleep(1)
+#    w.quit()
     confirm = w.find_element_by_id("_disk_id_15")
-#    confirm.click()
+    confirm.click()
     print "Saved: " + name.encode('utf-8'),
     try:
         print ", episode " + str(tmp[0])
@@ -153,7 +191,7 @@ def getUrl(animelist):
             u = soup.find('li', 'list_xz').a['href']
         except:
             try:
-                u = soup.find('div', 'download area').a['href']
+                u = soup.find('div', 'download').a['href']
             except:
                 print "Error"
                 urll[animelist.keys()[i]] = ''
