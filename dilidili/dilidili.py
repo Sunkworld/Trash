@@ -170,7 +170,7 @@ def saveToDisk(name, url):
             p.click()
 
 #    print 2
-#    time.sleep(1)
+    time.sleep(1)
 #    w.quit()
     confirm = w.find_element_by_id("_disk_id_15")
     confirm.click()
