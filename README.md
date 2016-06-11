@@ -1,5 +1,5 @@
 # Trash
-This is a practice project consisting of a bunch of python scripts for some simple tasks:
+This is a practice project consisting of a bunch of (python) scripts for some simple tasks:
 - **auto-weibo-check**: Auto check multiple users' weibo and notify
 - **bbscheck**: Auto check bdwm bbs
 - **dilidili**: Auto save latest episode of animes to baiduyun
