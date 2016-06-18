@@ -7,5 +7,5 @@ This is a practice project consisting of a bunch of (python) scripts for some si
 - **instru-reserve**: Auto instrument reserving script for CCME
 - **gmgard**: Auto signin script for gmgard.com
 - **pku-ipgw-workflow**: Alfred 2 Workflow for pku gateway
-- **mintique**: Mintique Picture Download
+- **PicDownload**: Mintique&Cocom Picture Download
 - **wordcount**: Chinese Word Frequency Count
