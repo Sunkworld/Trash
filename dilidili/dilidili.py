@@ -309,7 +309,7 @@ if __name__ == '__main__':
                 print k,v
                 count += 1
         if not count:
-            print "There is no anime as %s" % args.download
+            print "There is no anime as %s" % args.search
     else:
         w = webdriver.PhantomJS()
         w = login(usrn, pswd)
