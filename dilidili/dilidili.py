@@ -1,7 +1,6 @@
-#!/usr/local/bin/python
+#!/usr/bin/python
 # coding: utf-8
 import requests
-import requesocks
 import os
 import re
 import Queue
@@ -10,6 +9,7 @@ import json
 from selenium import webdriver
 import time
 import sys
+import traceback
 import argparse
 from threading import Thread
 #reload(sys)
@@ -17,12 +17,13 @@ sys.path.append('..')
 sys.path.append('/Applications/script/')
 #sys.setdefaultencoding('utf-8')
 from funcs import functions
-wantedList = ['Re：从零开始的异世界生活', '薄樱鬼御伽草子', '双星之阴阳师', '文豪野犬', '黑色残骸', '我叫坂本我最屌', '亚人', '羁绊者', '逆转裁判', '迷家', '超人幻想 第二季', '超时空要塞Δ Macross Delta', '甲铁城的卡巴内瑞无删减版']
+wantedList = ['Re：从零开始的异世界生活', '黑色残骸', '逆转裁判', '超时空要塞Δ Macross Delta', 'Rewrite', 'Regalia the Three Sacred Star', '弹丸论破3 The End of 希望之峰学园 绝望篇', 'Qualidea Code', 'planetarian 星之梦', '时空幻境 情热传说 the X', '弹丸论破3 The End of 希望之峰学园 未来篇']
 urll = {}
+llist = {}
 watched = {}
+newlist = []
 def getAnimeList():
-    s = requesocks.session()
-    s.proxies = {'http':'socks5://127.0.0.1:1080'}
+    s = requests.session()
     animelist = {}
     url = 'http://www.dilidili.com'
     animeurl = url + '/anime/'
@@ -48,6 +49,7 @@ def login(usrn, pswd):
     w.set_window_size(1124, 850)
     s = requests.Session()
     url = 'http://pan.baidu.com'
+    w.set_page_load_timeout(30)
     w.get(url)
     w.delete_all_cookies()
     s.get(url)
@@ -67,6 +69,8 @@ def login(usrn, pswd):
         a.send_keys(pswd)
         a = w.find_element_by_xpath('//input[@type="submit"]')
         a.click()
+	count = 0
+	
         while True:
             a = w.find_element_by_xpath('//input[@name="verifyCode"]')
             try:
@@ -74,10 +78,29 @@ def login(usrn, pswd):
             except:
                 break
             soup = BeautifulSoup(w.page_source)
-            u =soup('img')[-2]['src']
+            u =soup('img')[-1]['src']
+
+	    with open('1.jpg','wb+') as f:
+		f.write(s.get(u).content)
+	    #print u
+	    capt = raw_input('Input the captcha: ').strip()
+            a.send_keys(capt)
+	    print capt
+	    time.sleep(2)
+	    w.save_screenshot('ss.jpg')
+	    a = w.find_element_by_xpath('//input[@type="submit"]')
+	    a.click()
+	    continue
+
+	    print count
+	    count += 1
             isAsc = 0
             while not isAsc:
-                capt = functions.decaptcha(s.get(u).content)
+		try:
+                    capt = functions.decaptcha(s.get(u, timeout=2).content)
+		except:	
+		    print "Time out"
+		    continue
                 isAsc = 1
                 for i in capt:
                     if (i<='9' and i>='0') or (i<='Z' and i>='A'):
@@ -90,29 +113,40 @@ def login(usrn, pswd):
             a.click()
         print "Login succeeded."
 
-        with open('cook', 'wb+') as f:
-            f.write(json.dumps(w.get_cookies()))
+#        with open('cook', 'wb+') as f:
+#            f.write(json.dumps(w.get_cookies()))
     return w
 def saveToDisk(name, url):
     global w
     global watched
 #    name = name.encode('utf-8')
-    w.get(url)
-    w.refresh()
+    if not url:
+	return False
+    while True:
+	try:
+    	    w.get(url)
+    	    w.refresh()
+	    break
+	except:
+	    print "Connection Error"
+	    traceback.print_exc()
+	    time.sleep(20)	    
     try:
-        re.search('typicalPath":"(.*?)"', w.page_source).group(1).replace('\\/','%252F')
+        re.search('typicalPath":"(.*?)"', w.page_source)
 
     except Exception, e:
         print "Link for %s is lost." % name.encode('utf-8')
         return False
-    
+    time.sleep(1) 
     if not args.download:
         try:
             while not re.search('mp4', w.page_source):
                 w.find_element_by_xpath('//span[@class="name-text-wrapper"]/span').click()
-                time.sleep(1)
+                time.sleep(2)
         except:
+	    w.save_screenshot('err.jpg')
             print "No resource for %s" % name.encode('utf-8')
+	    traceback.print_exc()
             return False
 
     soup = BeautifulSoup(w.page_source.encode('utf-8'))
@@ -132,8 +166,8 @@ def saveToDisk(name, url):
                 tmp[1] = i
             
         if not tmp[0] > int(watched[name]):
-            watched[name] = str(tmp[0])
-#        print "New episode of %s has yet to be released" % name
+#            watched[name] = str(tmp[0])
+            print "New episode of %s has yet to be released" % name
             return True
         watched[name] = str(tmp[0])
     l = w.find_elements_by_xpath('//span[@node-type="chk"]')
@@ -142,7 +176,7 @@ def saveToDisk(name, url):
     sub = w.find_elements_by_xpath('//a[@data-key="saveToDisk"]')
     sub[0].click()
     if not args.download:
-        time.sleep(1)
+        time.sleep(3)
         try:
             d = w.find_element_by_xpath('//span[@node-path="dilidili"]')
             d.click()
@@ -162,7 +196,7 @@ def saveToDisk(name, url):
         except:
             new = w.find_element_by_id("_disk_id_16")
             new.click()
-            time.sleep(1)
+            time.sleep(2)
             p = w.find_elements_by_xpath('//input')[-1]
             p.clear()
             p.send_keys(name)
@@ -174,6 +208,7 @@ def saveToDisk(name, url):
 #    w.quit()
     confirm = w.find_element_by_id("_disk_id_15")
     confirm.click()
+    newlist.append(name.encode('utf-8'))
     print "Saved: " + name.encode('utf-8'),
     try:
         print ", episode " + str(tmp[0])
@@ -181,10 +216,9 @@ def saveToDisk(name, url):
         print '\n'
 def getUrl(animelist):
     global urll
-    s = requesocks.session()
-    s.proxies = {'http':'socks5://127.0.0.1:1080'}
+    s = requests.session()
     for i in range(0, len(animelist.keys())):
-        print animelist.values()[i]
+#        print animelist.values()[i]
         res = s.get(animelist.values()[i])
         soup = BeautifulSoup(res.content, "lxml")
         try:
@@ -193,12 +227,12 @@ def getUrl(animelist):
             try:
                 u = soup.find('div', 'download').a['href']
             except:
-                print "Error"
+#                print "Error for "+animelist.values()[i]
                 urll[animelist.keys()[i]] = ''
                 continue
         if re.search('pan.baidu', u):
             urll[animelist.keys()[i]] = u
-            print "Get Url:"+u
+#            print "Get Url:"+u
             continue
         elif not re.search('thread', u):
             urll[animelist.keys()[i]] = ''
@@ -214,13 +248,13 @@ def getUrl(animelist):
         for it in soup('a', href=True):
             if re.search('pan.baidu', it['href']):
                 urll[animelist.keys()[i]] = it['href']
-                print "Get url:"+it['href']
+#                print "Get url:"+it['href']
                 break
 #        print urll
 def getAnimeUrl():
     que = Queue.Queue()
-    for item in list:
-        que.put({item:list[item]})
+    for item in llist:
+        que.put({item:llist[item]})
     '''
     ll = []
     for i in range(10):
@@ -234,15 +268,20 @@ def getAnimeUrl():
     threads = []
     def worker():
         while not que.empty():
+	    if que.qsize()%100==0:
+		print que.qsize()
             getUrl(que.get())
     for i in range(10):
         threads.append(Thread(target = worker))
         threads[i].start()
     for i in range(10):
-        threads[i].join()
+        threads[i].join(60)
 #    urllist = getUrl(list)
+    print "Anime List Updated."
+#    functions.send('Anime List Updated.','Dilidili')
     with open('urll.txt','wb+') as f:
         json.dump(urll, f)
+    print 'urll get'
     return urll
     
 def saveSpecified():
@@ -270,7 +309,10 @@ def saveSpecified():
 
 def autoSave():
     global watched
+    global urll
+    global llist
     while True:
+	newlist = []
         if os.path.exists('watched.txt'):
             with open('watched.txt') as f:
                 watched = json.load(f)
@@ -282,7 +324,16 @@ def autoSave():
             saveToDisk(item, urll[item])
         with open('watched.txt','wb+') as f:
             json.dump(watched, f)
-        time.sleep(100000)
+	tm = "[%s] "%(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+	print tm
+	if newlist:
+	    tmpstr = 'Saved: '
+	    for item in newlist:
+		tmpstr += item
+		tmpstr += '\n'	
+		functions.send(tmpstr,tm)
+        time.sleep(3600)
+	urll = getAnimeUrl()	
         
 if __name__ == '__main__':
     usrn = u'cotton_高无'
@@ -292,15 +343,17 @@ if __name__ == '__main__':
     p.add_argument('-d', '--download', help='save to my disk')
     p.add_argument('-u', '--update', action='store_true', help='update the disk urls')
     args = p.parse_args()
-    if os.path.exists('urll.txt') and not args.update:
-        with open('urll.txt','rb+') as f:
-            urll = json.load(f)
-    else:
-        if os.path.exists('animelist.txt'):
-            with open('animelist.txt','rb+') as f:
-                list = json.load(f)
+    if os.path.exists('animelist.txt'):
+        with open('animelist.txt','rb+') as f:
+            llist = json.load(f)
+        if os.path.exists('urll.txt') and not args.update:
+            with open('urll.txt','rb+') as f:
+                urll = json.load(f)
         else:
-            list = getAnimeList()
+	    urll = getAnimeUrl()
+
+    else:
+        llist = getAnimeList()
         urll = getAnimeUrl()
     if args.search:
         count = 0
@@ -309,7 +362,7 @@ if __name__ == '__main__':
                 print k,v
                 count += 1
         if not count:
-            print "There is no anime as %s" % args.search
+            print "There is no anime as %s" % args.download
     else:
         w = webdriver.PhantomJS()
         w = login(usrn, pswd)
