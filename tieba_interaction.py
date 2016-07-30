@@ -14,7 +14,7 @@ url = 'http://tieba.baidu.com/i/99594746/my_reply?&pn={}'
 threads = []
 n = 0
 que = Queue.Queue()
-strg = '喜之郎菠萝味'
+strg = ''
 def search_for(purl):
     r = requests.get(purl).content
     if re.search(strg, r):
