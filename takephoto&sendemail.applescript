@@ -30,6 +30,9 @@ try
 			sendmessage
 		end tell
 	end tell
+	delay 2
+	do shell script "rm /Users/Yuuko/Desktop/*.jpg"
 on error
 	do shell script "/System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend"
 end try
+do shell script "~/.internet.py"
