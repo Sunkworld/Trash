@@ -119,6 +119,7 @@ def login(usrn, pswd):
 def saveToDisk(name, url):
     global w
     global watched
+#    print name, url
 #    name = name.encode('utf-8')
     if not url:
 	return False
@@ -217,6 +218,7 @@ def saveToDisk(name, url):
 def getUrl(animelist):
     global urll
     s = requests.session()
+    s.headers.update({'user-agent':'chrome'})
     for i in range(0, len(animelist.keys())):
 #        print animelist.values()[i]
         res = s.get(animelist.values()[i])
@@ -230,6 +232,7 @@ def getUrl(animelist):
 #                print "Error for "+animelist.values()[i]
                 urll[animelist.keys()[i]] = ''
                 continue
+#	print u
         if re.search('pan.baidu', u):
             urll[animelist.keys()[i]] = u
 #            print "Get Url:"+u
@@ -311,6 +314,7 @@ def autoSave():
     global watched
     global urll
     global llist
+    urll = getAnimeUrl()	
     while True:
 	newlist = []
         if os.path.exists('watched.txt'):
