@@ -27,6 +27,7 @@ class pku_elective:
         self.now = 0
 
     def getNext(self, url, params=[], referer=''):
+#        print url
         if referer != '':
             self.sess.headers.update({'Referer':referer})
         while True:
@@ -64,7 +65,7 @@ class pku_elective:
         cont = self.postNext(pku_elective.oauthLogin, self.data)
         p = {}
         p['token'] = re.search(r'n":"(.*?)"',cont).group(1)
-        p['rand'] = 0.32874243
+        p['rand'] = 0.7321405047770082
         self.getNext(pku_elective.ssoLogin, p)
 
     def getContent(self):
@@ -86,7 +87,8 @@ class pku_elective:
         except:
             pass
         try:
-            cont.append(self.getNext(pku_elective.page[2], referer=pku_elective.page[1]))
+            pass
+#            cont.append(self.getNext(pku_elective.page[2], referer=pku_elective.page[1]))
         except:
             pass
         return cont
@@ -112,17 +114,20 @@ class pku_elective:
         cont = self.getContent()
         courseList = []
         for i in range(len(cont)):
+            with open('{}.html'.format(i), 'wb+') as f:
+                f.write(cont[i])
             fl = re.finditer(r'refreshLimit(.*?)\'\',\'(.*?)\',\'(.*?)\',\'(.*?)\'', cont[i])
             if not fl:
                 continue
             for match in fl:
+#                print match.group(0)
                 for j in range(len(self.numbers)):
                     if match.group(4) == self.numbers[j]:
                         courseList.append({'index':'%s' % match.group(2),
                                            'seq':'%s' % match.group(3),
                                            'num':'%s' % self.numbers[j],
                                            'page':'%s' % i})
-#        print courseList
+        print courseList
         return courseList
 
     def reFresh(self, cl):        
