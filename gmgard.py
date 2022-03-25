@@ -29,8 +29,8 @@ class gmgard:
             self.isCookie = 0
         
     def login(self):
-#        self.usrn = 'sunkworld'#raw_input('Username: ')
-#        self.pswd = 'trumpet'#raw_input('Password: ')
+#        self.usrn = ''#raw_input('Username: ')
+#        self.pswd = ''#raw_input('Password: ')
         res = self.s.get(self.loginUrl)
         soup = BeautifulSoup(res.content)
         self.RVT = soup.find('input')['value']
